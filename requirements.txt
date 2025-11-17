@@ -1,0 +1,7 @@
+# Flask requirements
+Flask
+Flask-SQLAlchemy
+
+# Code maintenance requirements
+pytest
+pdoc
