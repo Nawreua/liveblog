@@ -69,3 +69,6 @@ instance/
 
 # VSCode
 .vscode/
+
+# pdoc
+docs/
