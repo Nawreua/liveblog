@@ -1,3 +1,7 @@
+"""
+A basic submodule for Flask configuration
+"""
+
 class Config(object):
 	"""
 	Configuration base, for all environments.

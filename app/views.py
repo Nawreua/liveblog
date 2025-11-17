@@ -3,6 +3,10 @@ from flask import render_template
 from app import app
 from app.models import Post
 
+"""
+The main submodule, defining all Flask routes
+"""
+
 @app.route("/")
 def hello_world():
     """
