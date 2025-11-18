@@ -5,3 +5,4 @@ Flask-SQLAlchemy
 # Code maintenance requirements
 pytest
 pdoc
+requests
