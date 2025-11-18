@@ -29,7 +29,7 @@ jobs:
       # install all dependencies (including pdoc)
       - run: pip install -r requirements.txt
       # build your documentation into docs/.
-      - run: pdoc -o docs/ app
+      - run: pdoc -o docs/ app '!app.test_'
 
       - uses: actions/upload-pages-artifact@v4
         with:

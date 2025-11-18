@@ -28,7 +28,7 @@ $ python3 run.py
 The documentation can be generated in the docs directory with
 
 ```sh
-$ pdoc -o docs/ app
+$ pdoc -o docs/ app '!app.test_'
 ```
 
 ### Testsuite
