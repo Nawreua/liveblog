@@ -1,0 +1,27 @@
+name: testsuite
+
+# run testsuite on every push
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  # Run the testsuite
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      # install all dependencies (including pytest)
+      - run: pip install -r requirements.txt
+      # launch the application and pytest
+      - name: pytest
+        run: |
+          GLOBAL_KEYPASS='44ea01b1aede885735cb3284076137543f7a264cbddc527fc1c8af2116bf6cd7' python3 run.py 2> /dev/null > /dev/null &
+          pytest
