@@ -8,7 +8,7 @@ from functools import wraps
 
 from flask import request
 
-global_keypass = os.environ['GLOBAL_KEYPASS']
+global_keypass = os.environ.get('GLOBAL_KEYPASS', '')
 """
 The global keypass used throughout the app
 
