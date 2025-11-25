@@ -13,15 +13,22 @@ def test_get_save_ok():
 
 # POST /save/
 
-post_data = {
+post_data_incomplete = {
     'author': 'Erwan',
-    'title': 'My saved post',
-    'content': 'This is a test post'
+    'content': 'This is a test post',
 }
+
+post_data = dict(post_data_incomplete,
+    **{'title': 'My saved post'}
+)
 
 def test_post_save_ok():
     response = requests.post(url, auth=tests.correct_auth, json=post_data)
     assert response.status_code == 200
+
+def test_post_save_ko_incomplete_data():
+    response = requests.post(url, auth=tests.correct_auth, json=post_data_incomplete)
+    assert response.status_code == 422
 
 def test_post_save_ko_no_json():
     response = requests.post(url, auth=tests.correct_auth, data=post_data)

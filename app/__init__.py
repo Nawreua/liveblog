@@ -33,7 +33,8 @@ def parse_and_config():
             db.drop_all()
             db.create_all()
 
-            db.session.add(Post(author='Erwan', title='Test post', content='Un exemple de post'))
+            from datetime import datetime
+            db.session.add(Post(author='Erwan', title='Test post', content='Un exemple de post', date=datetime.now()))
             db.session.commit()
 
             print(Post.query.all())
