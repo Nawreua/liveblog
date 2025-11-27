@@ -36,7 +36,7 @@ def require_auth(f):
     """
     Decorator handling the basic authentification for blogposting
     """
-    wraps(f)
+    @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
         if not auth or not check_auth(auth.password):

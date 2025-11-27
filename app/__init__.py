@@ -1,4 +1,9 @@
-from argparse import ArgumentParser
+"""
+A module implementing a live blogging application
+"""
+
+import logging
+from argparse import ArgumentParser, Namespace
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -9,6 +14,7 @@ from app.configuration import Config
 app.config.from_object(Config)
 
 db = SQLAlchemy(app)
+args = Namespace()
 
 def parse_and_config():
     """
@@ -21,13 +27,18 @@ def parse_and_config():
     parser = ArgumentParser(prog='liveblog',
                             description='A small sized blog')
     parser.add_argument('--debug', help='Launch the application in Debug Mode', action='store_true')
+    parser.add_argument('--clean-database', help='Drop all the database and create it again', action='store_true')
+    parser.add_argument('-l', '--log', help='Enable info log', action='store_true')
     args = parser.parse_args()
 
     if args.debug:
         from app.configuration import DebugConfig
         app.config.from_object(DebugConfig)
 
-    if args.debug:
+    if args.log:
+        app.logger.setLevel(logging.INFO)
+
+    if args.clean_database:
         from app.models import Post
         with app.app_context():
             db.drop_all()
