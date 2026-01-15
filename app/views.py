@@ -4,12 +4,15 @@ The main submodule, defining all Flask routes
 
 from datetime import datetime
 
-from flask import render_template, request, abort
+from flask import render_template, request, abort, jsonify
 from sqlalchemy import exc
 
 from app import app, db
 from app.models import Post
 from app.auth import require_auth
+
+def _no_accept_html(req):
+    return req.headers['Accept'].find('text/html') == -1
 
 @app.route("/")
 def hello_world():
@@ -21,8 +24,16 @@ def hello_world():
 @app.route("/view/")
 def view_all_posts():
     """
-    Display all posts
+    Display multiple posts, by default all, with buffering
+
+    URL parameters:
+    - limit: number of posts to load, by default 25
+    - offset: id of the first post to load from
     """
+    offset = request.args.get('offset', 0)
+    limit = request.args.get('limit', 25)
+    if _no_accept_html(request):
+        return jsonify(Post.get_multiple_posts(offset, limit))
     return "<p>FIXME</p>"
 
 @app.route("/view/<id>")
@@ -33,7 +44,10 @@ def view_post(id):
     Route arguments:
     - id: the id of the post 
     """
-    return render_template('view.html', post=Post.query.get(id))
+    post = Post.get_post(id)
+    if _no_accept_html(request):
+        return jsonify(post)
+    return render_template('view.html', post=post)
 
 @app.get("/save/")
 def get_post_form():
@@ -63,4 +77,4 @@ def save_post_form():
         db.session.commit()
     except exc.IntegrityError:
         abort(422)
-    return render_template('view.html', post=Post.query.get(new_post.id))
+    return render_template('view.html', post=Post.get_post(new_post.id))
