@@ -2,8 +2,14 @@
 A submodule for the database models
 """
 
+import datetime
+from dataclasses import dataclass
+
+from sqlalchemy import asc
+
 from app import db
 
+@dataclass
 class Post(db.Model):
     """
     The main model of the database, containing user-made posts.
@@ -14,8 +20,22 @@ class Post(db.Model):
     - content - Text: the main content of the post
     - date - DateTime: the date-time at which the post was made, required
     """
-    id = db.Column(db.Integer, primary_key=True)
-    author = db.Column(db.String(64), nullable=False)
-    title = db.Column(db.String(250), nullable=False)
-    content = db.Column(db.Text)
-    date = db.Column(db.DateTime, nullable=False)
+    id:int = db.Column(db.Integer, primary_key=True)
+    author:str = db.Column(db.String(64), nullable=False)
+    title:str = db.Column(db.String(250), nullable=False)
+    content:str = db.Column(db.Text)
+    date:datetime.datetime = db.Column(db.DateTime, nullable=False)
+
+    def get_post(id):
+        """
+        Retrieve a post given an id
+        """
+        return Post.query.get(id)
+
+    def get_multiple_posts(offset, limit):
+        """
+        Retrieve list of posts, from an offset id,
+        with a limited size
+        """
+        return Post.query.order_by(asc(Post.id)).\
+            filter(Post.id > offset).limit(limit)
