@@ -1,0 +1,81 @@
+import cmd
+import re
+from argparse import ArgumentParser
+
+import requests
+from requests.auth import HTTPBasicAuth
+
+class LiveblogClient(cmd.Cmd):
+    intro = 'Welcome to the liveblog client. Type help or ? to list commands.\n'
+    prompt = '(client) '
+    base_url = ''
+    user = 'user'
+    keypass = ''
+
+    _url_pattern = None
+
+    def __init__(self, completekey = "tab", stdin = None, stdout = None, base_url='', keypass=''):
+        super().__init__(completekey, stdin, stdout)
+        if base_url != '':
+            self.do_setup_url(base_url)
+        self.keypass = keypass
+
+    def do_setup_url(self, url):
+        'Configure the URL used by the client: setup_url http://127.0.0.1:5000/'
+
+        if self._url_pattern is None:
+            # Using [Liberal Regex Pattern for Web URLs by @gruber](https://gist.github.com/gruber/8891611)
+            # License: https://opensource.org/license/bsd-3-clause
+            self._url_pattern = re.compile("""(?i)\\b((?:https?:(?:/{1,3}|[a-z0-9%])|[a-z0-9.\\-]+[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)/)(?:[^\\s()<>{}\\[\\]]+|\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\))+(?:\\([^\\s()]*?\\([^\\s()]+\\)[^\\s()]*?\\)|\\([^\\s]+?\\)|[^\\s`!()\\[\\]{};:'".,<>?«»“”‘’])|(?:(?<!@)[a-z0-9]+(?:[.\\-][a-z0-9]+)*[.](?:com|net|org|edu|gov|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|name|post|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|ax|az|ba|bb|bd|be|bf|bg|bh|bi|bj|bm|bn|bo|br|bs|bt|bv|bw|by|bz|ca|cc|cd|cf|cg|ch|ci|ck|cl|cm|cn|co|cr|cs|cu|cv|cx|cy|cz|dd|de|dj|dk|dm|do|dz|ec|ee|eg|eh|er|es|et|eu|fi|fj|fk|fm|fo|fr|ga|gb|gd|ge|gf|gg|gh|gi|gl|gm|gn|gp|gq|gr|gs|gt|gu|gw|gy|hk|hm|hn|hr|ht|hu|id|ie|il|im|in|io|iq|ir|is|it|je|jm|jo|jp|ke|kg|kh|ki|km|kn|kp|kr|kw|ky|kz|la|lb|lc|li|lk|lr|ls|lt|lu|lv|ly|ma|mc|md|me|mg|mh|mk|ml|mm|mn|mo|mp|mq|mr|ms|mt|mu|mv|mw|mx|my|mz|na|nc|ne|nf|ng|ni|nl|no|np|nr|nu|nz|om|pa|pe|pf|pg|ph|pk|pl|pm|pn|pr|ps|pt|pw|py|qa|re|ro|rs|ru|rw|sa|sb|sc|sd|se|sg|sh|si|sj|Ja|sk|sl|sm|sn|so|sr|ss|st|su|sv|sx|sy|sz|tc|td|tf|tg|th|tj|tk|tl|tm|tn|to|tp|tr|tt|tv|tw|tz|ua|ug|uk|us|uy|uz|va|vc|ve|vg|vi|vn|vu|wf|ws|ye|yt|yu|za|zm|zw)\\b/?(?!@)))""")
+        if self._url_pattern.fullmatch(url) is None:
+            print(f'Erroneous base URL configured: {url}')
+        else:
+            self.base_url = url if url.endswith('/') else url + '/'
+    
+    def do_view_post(self, id):
+        'Request and output a blog post: view_post 1'
+        try:
+            int(id)
+        except ValueError:
+            print('id parameter must be an integer')
+            return False
+        if (response := self.request_get('view/' + id)) is not None:
+            print(response.json())
+
+    def do_exit(self, _):
+        'Cleanup and exit the client: exit'
+        return True
+    
+    def check_request(self, url):
+        if self.base_url == '':
+            print('No URL setup for the client, check setup_url')
+            return False
+        if self._url_pattern.fullmatch(url) is None:
+            print(f'Erroneous URL requested: {url}')
+            return False
+        return True
+
+    def check_response(self, response: requests.Response):
+        if not response.ok:
+            print(f'Response error with code: {response.status_code}')
+            return False
+        return True
+    
+    def request_get(self, url):
+        complete_url = self.base_url + url
+        if not self.check_request(complete_url):
+            return None
+        response = requests.get(complete_url, auth=HTTPBasicAuth(self.user, self.keypass))
+        if self.check_response(response):
+            return response
+        return None
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser(prog='liveblog client',
+                            description='A simple REPL client for liveblog usage')
+    parser.add_argument('--url', help='Setup the base URL used by the client', default='')
+    parser.add_argument('--keypass', help='Setup the keypass used by the client', default='')
+    args = parser.parse_args()
+
+    LiveblogClient(base_url=args.url, keypass=args.keypass).cmdloop()
