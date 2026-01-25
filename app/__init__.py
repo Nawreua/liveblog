@@ -28,6 +28,7 @@ def parse_and_config():
                             description='A small sized blog')
     parser.add_argument('--debug', help='Launch the application in Debug Mode', action='store_true')
     parser.add_argument('--clean-database', help='Drop all the database and create it again', action='store_true')
+    parser.add_argument('--populate-database', help='Populate database for testing purposes', type=int)
     parser.add_argument('-l', '--log', help='Enable info log', action='store_true')
     args = parser.parse_args()
 
@@ -40,16 +41,22 @@ def parse_and_config():
         app.logger.setLevel(logging.DEBUG)
 
     if args.clean_database:
-        from app.models import Post
+        app.logger.info('Cleaning database')
         with app.app_context():
             db.drop_all()
             db.create_all()
 
-            from datetime import datetime
-            db.session.add(Post(author='Erwan', title='Test post', content='Un exemple de post', date=datetime.now()))
+    if args.populate_database:
+        from app.models import Post
+        from datetime import datetime
+        app.logger.info('Populating database with mock object')
+        with app.app_context():
+            db.session.add(Post(author='Erwan', title='Test Erwan', content='Un exemple de poteau', date=datetime.now()))
+            for x in range(0, args.populate_database):
+                db.session.add(Post(author='Author', title=f'Test Post {x}', date=datetime.now()))
             db.session.commit()
 
-            print(Post.query.all())
+            app.logger.debug(Post.query.all())
 
 
 from app import views
