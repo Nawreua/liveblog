@@ -17,11 +17,12 @@ class LiveblogClient(cmd.Cmd):
 
     _url_pattern = None
 
-    def __init__(self, completekey = "tab", stdin = None, stdout = None, base_url='', keypass=''):
+    def __init__(self, completekey = "tab", stdin = None, stdout = None, base_url='', keypass='', user=''):
         super().__init__(completekey, stdin, stdout)
         if base_url != '':
             self.do_setup_url(base_url)
         self.keypass = keypass
+        self.user = user
 
     def do_setup_url(self, url):
         'Configure the URL used by the client: setup_url http://127.0.0.1:5000/'
@@ -35,6 +36,14 @@ class LiveblogClient(cmd.Cmd):
         else:
             self.base_url = url if url.endswith('/') else url + '/'
             logger.info(f'New URL is {self.base_url}')
+
+    def do_setup_user(self, user):
+        'Configure the user used by the client: setup_user Test'
+        self.user = user
+
+    def do_setup_keypass(self, keypass):
+        'Configure the keypass used by the client: setup_keypass test_keypass'
+        self.keypass = keypass
     
     def do_view_post(self, arg):
         'Request and output a blog post: view_post 1'
@@ -42,6 +51,7 @@ class LiveblogClient(cmd.Cmd):
             id = parse(arg.split(), [int])
         except ValueError:
             return False
+        
         if (response := self.request_get('view/' + str(id))) is not None:
             post = response.json()
             logger.info(post)
@@ -53,11 +63,40 @@ class LiveblogClient(cmd.Cmd):
             offset, limit = parse(arg.split(), [int, int])
         except ValueError:
             return False
+        
         if (response := self.request_get('view/', payload={'offset': offset, 'limit': limit})) is not None:
             posts = response.json()
             logger.info(posts)
             for post in posts:
                 pretty_print_post(post)
+
+    def do_send_post(self, _):
+        'Input the new post and send it to the server: send_post'
+        try:
+            logger.info('Asking for title')
+            title = input('Title: ')
+            if title == '':
+                print('Title cannot be empty')
+                return False
+            logger.info('Asking for content')
+            content = input('Content: ')
+            while (line := input()) != '':
+                content += '\n' + line
+        except EOFError:
+            print('Cancelling new post...')
+            return False
+
+        post_data = {
+            'author': self.user,
+            'title': title,
+            'content': content
+        }
+        logger.info(post_data)
+
+        if (response := self.request_post('save/', json=post_data)) is not None:
+            new_post = response.json()
+            logger.info(new_post)
+            pretty_print_post(new_post)
 
     def do_exit(self, _):
         'Cleanup and exit the client: exit'
@@ -78,11 +117,21 @@ class LiveblogClient(cmd.Cmd):
             return False
         return True
     
+    def request_post(self, url, payload={}, json=None):
+        complete_url = self.base_url + url
+        if not self.check_request(complete_url):
+            return None
+        logger.info(f'Requesting {complete_url} with POST')
+        response = requests.post(complete_url, auth=HTTPBasicAuth(self.user, self.keypass), params=payload, json=json)
+        if self.check_response(response):
+            return response
+        return None
+    
     def request_get(self, url, payload={}):
         complete_url = self.base_url + url
         if not self.check_request(complete_url):
             return None
-        logger.info(f'Requesting {complete_url}')
+        logger.info(f'Requesting {complete_url} with GET')
         response = requests.get(complete_url, auth=HTTPBasicAuth(self.user, self.keypass), params=payload)
         if self.check_response(response):
             return response
@@ -116,6 +165,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(prog='liveblog client',
                             description='A simple REPL client for liveblog usage')
     parser.add_argument('--url', help='Setup the base URL used by the client', default='')
+    parser.add_argument('--user', help='Setup the user name', default='user')
     parser.add_argument('--keypass', help='Setup the keypass used by the client', default='')
     parser.add_argument('-l', '--log', help='Enable info log', action='store_true')
     args = parser.parse_args()
@@ -123,4 +173,4 @@ if __name__ == "__main__":
     if args.log:
         logger.setLevel(logging.INFO)
 
-    LiveblogClient(base_url=args.url, keypass=args.keypass).cmdloop()
+    LiveblogClient(base_url=args.url, keypass=args.keypass, user=args.user).cmdloop()
