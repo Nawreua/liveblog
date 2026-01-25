@@ -25,6 +25,8 @@ post_data = dict(post_data_incomplete,
 def test_post_save_ok():
     response = requests.post(url, auth=tests.correct_auth, json=post_data)
     assert response.status_code == 200
+    data = response.json()
+    assert data['author'] == 'Erwan'
 
 def test_post_save_ko_incomplete_data():
     response = requests.post(url, auth=tests.correct_auth, json=post_data_incomplete)
