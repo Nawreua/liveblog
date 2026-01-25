@@ -11,8 +11,32 @@ from app import app, db
 from app.models import Post
 from app.auth import require_auth
 
-def _no_accept_html(req):
-    return req.headers['Accept'].find('text/html') == -1
+def return_html(accept_header: str):
+    """
+    Check if the Accept header requires an HTML before any
+    JSON requirement
+
+    Since the API is JSON first, we need to ensure that we
+    return HMTL result only if needed and explicitly asked
+    """
+    html_type_accept = sorted(
+        filter(lambda x: x != -1,
+               [accept_header.find('text/html'),
+                accept_header.find('.html'),
+                accept_header.find('.htm')
+                ]
+    ))
+    html_accept = -1 if len(html_type_accept) == 0 else html_type_accept[0]
+
+    json_type_accept = sorted(
+        filter(lambda x: x != -1,
+               [accept_header.find('application/json'),
+                accept_header.find('.json')
+                ]
+    ))
+    json_accept = -1 if len(json_type_accept) == 0 else json_type_accept[0]
+
+    return html_accept != -1 and json_accept == -1 or html_accept != -1 and html_accept < json_accept
 
 @app.route("/")
 def hello_world():
@@ -38,9 +62,7 @@ def view_all_posts():
     app.logger.info('Fetch posts')
     posts = Post.get_multiple_posts(offset, limit).all()
     app.logger.debug(posts)
-    if _no_accept_html(request):
-        return jsonify(posts)
-    return "<p>FIXME</p>"
+    return jsonify(posts)
 
 @app.route("/view/<id>")
 def view_post(id):
@@ -57,9 +79,9 @@ def view_post(id):
     app.logger.debug(post)
     if post is None:
         abort(404)
-    if _no_accept_html(request):
-        return jsonify(post)
-    return render_template('view.html', post=post)
+    if return_html(request.headers['Accept']):
+        return render_template('view.html', post=post)
+    return jsonify(post)
 
 @app.get("/save/")
 def get_post_form():
@@ -94,6 +116,6 @@ def save_post_form():
     except exc.IntegrityError:
         app.logger.error('New post creation failed')
         abort(422)
-    if _no_accept_html(request):
-        return jsonify(new_post)
-    return render_template('view.html', post=Post.get_post(new_post.id))
+    if return_html(request.headers['Accept']):
+        return render_template('view.html', post=Post.get_post(new_post.id))
+    return jsonify(new_post)
