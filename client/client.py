@@ -1,9 +1,12 @@
 import cmd
 import re
+import logging
 from argparse import ArgumentParser
 
 import requests
 from requests.auth import HTTPBasicAuth
+
+logger = logging.getLogger(__name__)
 
 class LiveblogClient(cmd.Cmd):
     intro = 'Welcome to the liveblog client. Type help or ? to list commands.\n'
@@ -31,6 +34,7 @@ class LiveblogClient(cmd.Cmd):
             print(f'Erroneous base URL configured: {url}')
         else:
             self.base_url = url if url.endswith('/') else url + '/'
+            logger.info(f'New URL is {self.base_url}')
     
     def do_view_post(self, arg):
         'Request and output a blog post: view_post 1'
@@ -39,7 +43,9 @@ class LiveblogClient(cmd.Cmd):
         except ValueError:
             return False
         if (response := self.request_get('view/' + str(id))) is not None:
-            print(response.json())
+            post = response.json()
+            logger.info(post)
+            pretty_print_post(post)
 
     def do_fetch_posts(self, arg):
         'Request and output multiple blog posts: fetch_posts 1 25'
@@ -48,7 +54,10 @@ class LiveblogClient(cmd.Cmd):
         except ValueError:
             return False
         if (response := self.request_get('view/', payload={'offset': offset, 'limit': limit})) is not None:
-            print(response.json())
+            posts = response.json()
+            logger.info(posts)
+            for post in posts:
+                pretty_print_post(post)
 
     def do_exit(self, _):
         'Cleanup and exit the client: exit'
@@ -73,10 +82,20 @@ class LiveblogClient(cmd.Cmd):
         complete_url = self.base_url + url
         if not self.check_request(complete_url):
             return None
+        logger.info(f'Requesting {complete_url}')
         response = requests.get(complete_url, auth=HTTPBasicAuth(self.user, self.keypass), params=payload)
         if self.check_response(response):
             return response
         return None
+
+def pretty_print_post(post):
+    print(post['title'])
+    print(f'By {post['author']}')
+    print(f'\x1B[3m{post['date']}\x1B[0m')
+    print('-' * len(post['title']))
+    if post['content'] is not None:
+        print(post['content'])
+    print()
 
 def parse(args, converter):
     converted = []
@@ -98,6 +117,10 @@ if __name__ == "__main__":
                             description='A simple REPL client for liveblog usage')
     parser.add_argument('--url', help='Setup the base URL used by the client', default='')
     parser.add_argument('--keypass', help='Setup the keypass used by the client', default='')
+    parser.add_argument('-l', '--log', help='Enable info log', action='store_true')
     args = parser.parse_args()
+
+    if args.log:
+        logger.setLevel(logging.INFO)
 
     LiveblogClient(base_url=args.url, keypass=args.keypass).cmdloop()
