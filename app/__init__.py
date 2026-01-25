@@ -31,12 +31,13 @@ def parse_and_config():
     parser.add_argument('-l', '--log', help='Enable info log', action='store_true')
     args = parser.parse_args()
 
+    if args.log:
+        app.logger.setLevel(logging.INFO)
+
     if args.debug:
         from app.configuration import DebugConfig
         app.config.from_object(DebugConfig)
-
-    if args.log:
-        app.logger.setLevel(logging.INFO)
+        app.logger.setLevel(logging.DEBUG)
 
     if args.clean_database:
         from app.models import Post
