@@ -4,6 +4,14 @@ import tests
 
 url = tests.base_url + 'view/'
 
+# GET /
+
+def test_index_ok():
+    response = requests.get(tests.base_url)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 5
+
 # GET /view/<id>
 
 def test_view_id_ok():

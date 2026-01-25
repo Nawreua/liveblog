@@ -41,9 +41,20 @@ def return_html(accept_header: str):
 @app.route("/")
 def hello_world():
     """
-    Display the main page
+    Display the latest posts
+
+    URL parameters:
+    - limit: number of posts to load, by default 5
     """
-    return "<p>Hello, World!</p>"
+    if return_html(request.headers['Accept']):
+        return "<p>Hello, World!</p>"
+    app.logger.info('/ route requested')
+    limit = request.args.get('limit', 5)
+    app.logger.debug(f'With limit {limit}')
+    app.logger.info('Fetch posts')
+    posts = Post.get_latest_posts(limit).all()
+    app.logger.debug(posts)
+    return jsonify(posts)
 
 @app.route("/view/")
 def view_all_posts():

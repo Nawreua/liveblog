@@ -5,7 +5,7 @@ A submodule for the database models
 import datetime
 from dataclasses import dataclass
 
-from sqlalchemy import asc
+from sqlalchemy import asc, desc
 
 from app import db
 
@@ -31,6 +31,15 @@ class Post(db.Model):
         Retrieve a post given an id
         """
         return Post.query.get(id)
+
+    def get_latest_posts(limit):
+        """
+        Retrieve a list of posts, sorted
+        by descending date-time with a
+        limited size
+        """
+        return Post.query.order_by(desc(Post.date)).\
+            limit(limit)
 
     def get_multiple_posts(offset, limit):
         """
