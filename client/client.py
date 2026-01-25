@@ -32,14 +32,22 @@ class LiveblogClient(cmd.Cmd):
         else:
             self.base_url = url if url.endswith('/') else url + '/'
     
-    def do_view_post(self, id):
+    def do_view_post(self, arg):
         'Request and output a blog post: view_post 1'
         try:
-            int(id)
+            id = parse(arg.split(), [int])
         except ValueError:
-            print('id parameter must be an integer')
             return False
-        if (response := self.request_get('view/' + id)) is not None:
+        if (response := self.request_get('view/' + str(id))) is not None:
+            print(response.json())
+
+    def do_fetch_posts(self, arg):
+        'Request and output multiple blog posts: fetch_posts 1 25'
+        try:
+            offset, limit = parse(arg.split(), [int, int])
+        except ValueError:
+            return False
+        if (response := self.request_get('view/', payload={'offset': offset, 'limit': limit})) is not None:
             print(response.json())
 
     def do_exit(self, _):
@@ -61,15 +69,29 @@ class LiveblogClient(cmd.Cmd):
             return False
         return True
     
-    def request_get(self, url):
+    def request_get(self, url, payload={}):
         complete_url = self.base_url + url
         if not self.check_request(complete_url):
             return None
-        response = requests.get(complete_url, auth=HTTPBasicAuth(self.user, self.keypass))
+        response = requests.get(complete_url, auth=HTTPBasicAuth(self.user, self.keypass), params=payload)
         if self.check_response(response):
             return response
         return None
 
+def parse(args, converter):
+    converted = []
+    if len(args) != len(converter):
+        print(f'Excepted {len(converter)} arguments, received only {len(args)}')
+        raise ValueError
+    for x, convert in zip(args, converter):
+        try:
+            converted += [convert(x)]
+        except ValueError:
+            print(f'Excepted value type {convert}, incompatible with {x}')
+            raise ValueError
+    if len(converted) == 1:
+        return converted[0]
+    return tuple(converted)
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog='liveblog client',
