@@ -55,6 +55,8 @@ def view_post(id):
     app.logger.info('Fetch post')
     post = Post.get_post(id)
     app.logger.debug(post)
+    if post is None:
+        abort(404)
     if _no_accept_html(request):
         return jsonify(post)
     return render_template('view.html', post=post)
@@ -92,4 +94,6 @@ def save_post_form():
     except exc.IntegrityError:
         app.logger.error('New post creation failed')
         abort(422)
+    if _no_accept_html(request):
+        return jsonify(new_post)
     return render_template('view.html', post=Post.get_post(new_post.id))
