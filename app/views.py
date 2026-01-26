@@ -88,8 +88,6 @@ def view_post(id):
     app.logger.info('Fetch post')
     post = Post.get_post(id)
     app.logger.debug(post)
-    if post is None:
-        abort(404)
     if return_html(request.headers['Accept']):
         return render_template('view.html', post=post)
     return jsonify(post)

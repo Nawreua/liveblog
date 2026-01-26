@@ -30,7 +30,7 @@ class Post(db.Model):
         """
         Retrieve a post given an id
         """
-        return Post.query.get(id)
+        return Post.query.get_or_404(id)
 
     def get_latest_posts(limit):
         """
